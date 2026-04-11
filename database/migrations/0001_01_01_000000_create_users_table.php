@@ -14,9 +14,16 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            
+            // Custom Gas Station Columns
+            $table->string('role')->default('Pump Attendant'); // 'Manager', 'Pump Attendant'
+            $table->boolean('is_active')->default(true); // To lock out resigned employees
+            
+            // Standard Laravel Authentication (Email & Password for everyone)
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            
             $table->rememberToken();
             $table->timestamps();
         });

@@ -10,8 +10,10 @@ return new class extends Migration
     {
         Schema::create('pumps', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // e.g., 'Front Pump 1', 'Back Pump 2'
+            $table->string('name');
             $table->enum('type', ['Digital', 'Mechanical']);
+            $table->boolean('is_active')->default(true); 
+            
             $table->timestamps();
         });
     }
