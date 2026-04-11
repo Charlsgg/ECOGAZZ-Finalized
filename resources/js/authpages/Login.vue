@@ -9,15 +9,23 @@
             </div>
             
             <h1 class="text-[1.4rem] font-extrabold tracking-[-0.5px] text-[#1a1c1b] mb-1">EcoGazz GSMS</h1>
-            <div class="text-gray-500 text-[0.78rem] font-medium mb-7">Kimaya Station Management</div>
+            <div class="text-gray-500 text-[0.78rem] font-medium mb-7">Station Login Portal</div>
             
             <input 
+                type="email" 
+                v-model="email" 
+                placeholder="Email Address" 
+                :disabled="isLoggingIn"
+                class="w-full p-3.5 mb-3 border-2 border-[#e8ebe9] rounded-xl text-[0.95rem] text-center font-medium bg-[#fafbfa] transition-all focus:outline-none focus:border-[#3dbb91] focus:bg-white"
+            >
+
+            <input 
                 type="password" 
-                v-model="pin" 
-                placeholder="Enter PIN / Password" 
+                v-model="password" 
+                placeholder="Password" 
                 @keydown.enter="attemptLogin()"
                 :disabled="isLoggingIn"
-                class="w-full p-3.5 mb-4 border-2 border-[#e8ebe9] rounded-xl text-[0.95rem] text-center tracking-widest font-bold bg-[#fafbfa] transition-all focus:outline-none focus:border-[#3dbb91] focus:bg-white focus:ring-4 focus:ring-[#3dbb91]/15"
+                class="w-full p-3.5 mb-6 border-2 border-[#e8ebe9] rounded-xl text-[0.95rem] text-center tracking-widest font-bold bg-[#fafbfa] transition-all focus:outline-none focus:border-[#3dbb91] focus:bg-white focus:ring-4 focus:ring-[#3dbb91]/15"
             >
             
             <div class="flex gap-2.5">
@@ -26,7 +34,7 @@
                     :disabled="isLoggingIn" 
                     class="flex-1 p-3.5 rounded-xl text-[0.85rem] font-bold flex justify-center items-center gap-2 transition-all hover:-translate-y-0.5 shadow-md bg-[#1a1c1b] text-white active:translate-y-0 disabled:opacity-70"
                 >
-                    <i class="fa-solid fa-shield-halved" :class="{'fa-spin': isLoggingIn}"></i> Admin
+                    <i class="fa-solid fa-shield-halved" :class="{'fa-spin': isLoggingIn && activeBtn === 'Manager'}"></i> Admin
                 </button>
 
                 <button 
@@ -34,7 +42,7 @@
                     :disabled="isLoggingIn" 
                     class="flex-1 p-3.5 rounded-xl text-[0.85rem] font-bold flex justify-center items-center gap-2 transition-all hover:-translate-y-0.5 shadow-md bg-linear-to-br from-[#3dbb91] to-[#2d9e7a] text-white active:translate-y-0 disabled:opacity-70"
                 >
-                    <i class="fa-solid fa-user" :class="{'fa-spin': isLoggingIn}"></i> Gasman
+                    <i class="fa-solid fa-user" :class="{'fa-spin': isLoggingIn && activeBtn === 'Staff'}"></i> Gasman
                 </button>
             </div>
 
@@ -50,53 +58,62 @@ import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
-const pin = ref('');
+const email = ref('');
+const password = ref('');
 const isLoggingIn = ref(false);
+const activeBtn = ref(null); // Tracking which button was clicked for the spinner
 const errorMessage = ref('');
 const router = useRouter();
 
 /**
  * @param {string} intendedRole - 'Manager' or 'Staff'
  */
-const attemptLogin = async (intendedRole = null) => {
-    if (!pin.value) {
-        errorMessage.value = "Please enter your PIN.";
+const attemptLogin = async (intendedRole) => {
+    if (!email.value || !password.value) {
+        errorMessage.value = "Please enter both email and password.";
+        return;
+    }
+
+    if (!intendedRole) {
+        errorMessage.value = "Please select a login type (Admin or Gasman).";
         return;
     }
 
     try {
         errorMessage.value = '';
         isLoggingIn.value = true;
+        activeBtn.value = intendedRole;
 
-        // Matches your AuthController login method
+        // Matches the updated AuthController
         const response = await axios.post('/api/login', {
-            pin: pin.value,
-            intended_role: intendedRole // Passing this helps the UI handle the redirect correctly
+            email: email.value,
+            password: password.value,
+            role: intendedRole 
         });
 
         const { token, role, user } = response.data;
 
-        // 1. Perspective Storage
+        // 1. Storage
         localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_role', role); // This will be 'admin' or 'staff'
+        localStorage.setItem('user_role', role); // 'Manager' or 'Staff'
         localStorage.setItem('user_name', user.name);
         
         // 2. Set Global Axios Authorization Header
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        // 3. Routing logic based on mapped role from Controller
-        if (role === 'admin') {
+        // 3. Routing logic based on role
+        if (role === 'Manager') {
             router.push({ name: 'admin-dashboard' });
         } else {
             router.push({ name: 'staff-pos' });
         }
 
     } catch (error) {
-        pin.value = '';
-        // Handles 401 (Invalid PIN) and 403 (Inactive/Role mismatch)
+        password.value = ''; // Clear password on error
         errorMessage.value = error.response?.data?.message || 'Unauthorized. Check your credentials.';
     } finally {
         isLoggingIn.value = false;
+        activeBtn.value = null;
     }
 };
 </script>

@@ -11,31 +11,65 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'pin' => 'required|string',
+            'email'    => 'required|email',
+            'password' => 'required|string',
+            'role'     => 'required|string', 
         ]);
 
-        // 1. Filter only active users from your Model's is_active attribute
-        $users = User::where('is_active', true)->get();
+        // 1. Find the user by email ONLY first (to see if they exist)
+        $user = User::where('email', $request->email)->first();
 
-        foreach ($users as $user) {
-            // 2. Check the hashed password (the PIN)
-            if (Hash::check($request->pin, $user->password)) {
-                
-                // 3. Generate Sanctum token
-                $token = $user->createToken('auth_token')->plainTextToken;
-
-                return response()->json([
-                    'token' => $token,
-                    // Map your Model's 'Manager' role to 'admin' for frontend consistency
-                    'role' => $user->isManager() ? 'admin' : 'staff',
-                    'user' => [
-                        'name' => $user->name,
-                        'email' => $user->email,
-                    ]
-                ]);
-            }
+        // 2. DEBUG: Check if user exists
+        if (!$user) {
+            return response()->json(['message' => 'Account with this email not found.'], 401);
         }
 
-        return response()->json(['message' => 'Invalid PIN or account inactive.'], 401);
+        // 3. DEBUG: Check if active
+        if (!$user->is_active) {
+            return response()->json(['message' => 'This account is currently deactivated.'], 401);
+        }
+
+        // 4. DEBUG: Check password
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Incorrect password.'], 401);
+        }
+
+        /**
+         * 5. ROLE NORMALIZATION MAPPING
+         * Your DB has "Pump Attendant", but your Vue sends "Staff".
+         * We need to allow them to match.
+         */
+        $dbRole = $user->role;
+        $sentRole = $request->role;
+
+        // Logic: If they sent 'Staff', allow it to match 'Pump Attendant'
+        $isStaffMatch = ($sentRole === 'Staff' && $dbRole === 'Pump Attendant');
+        $isExactMatch = ($sentRole === $dbRole);
+
+        if (!$isExactMatch && !$isStaffMatch) {
+            return response()->json([
+                'message' => "Role mismatch. You tried to log in as $sentRole, but your account is registered as $dbRole.",
+            ], 403);
+        }
+
+        // 6. Generate Sanctum token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'status' => 'success',
+            'token'  => $token,
+            'role'   => $dbRole, // Send back the real DB role
+            'user'   => [
+                'id'    => $user->id,
+                'name'  => $user->name,
+                'email' => $user->email,
+            ]
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['message' => 'Logged out successfully']);
     }
 }
