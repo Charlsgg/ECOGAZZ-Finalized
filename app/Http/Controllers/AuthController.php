@@ -39,14 +39,27 @@ class AuthController extends Controller
          * Your DB has "Pump Attendant", but your Vue sends "Staff".
          * We need to allow them to match.
          */
-        $dbRole = $user->role;
-        $sentRole = $request->role;
+        /**
+         * 5. ROLE NORMALIZATION MAPPING
+         * Bridges the gap between Frontend Labels and Database Roles
+         */
+        $dbRole = $user->role; // What is in the Database
+        $sentRole = $request->role; // What was clicked in Vue ('Manager' or 'Staff')
 
-        // Logic: If they sent 'Staff', allow it to match 'Pump Attendant'
-        $isStaffMatch = ($sentRole === 'Staff' && $dbRole === 'Pump Attendant');
-        $isExactMatch = ($sentRole === $dbRole);
+        // Group 1: Admin / Manager group
+        $isAdminMatch = (
+            in_array($sentRole, ['Manager', 'admin']) && 
+            in_array($dbRole, ['Manager', 'admin'])
+        );
 
-        if (!$isExactMatch && !$isStaffMatch) {
+        // Group 2: Staff / Pump Attendant group
+        $isStaffMatch = (
+            in_array($sentRole, ['Staff', 'employee']) && 
+            in_array($dbRole, ['Pump Attendant', 'Staff', 'employee'])
+        );
+
+        // Check if either group matches or if they are exactly the same string
+        if (!$isAdminMatch && !$isStaffMatch && $sentRole !== $dbRole) {
             return response()->json([
                 'message' => "Role mismatch. You tried to log in as $sentRole, but your account is registered as $dbRole.",
             ], 403);

@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin Manager',
             'email' => 'admin@gmail.com',
             'password' => Hash::make('password'), 
-            'role' => 'Manager',
+            'role' => 'Admin',
             'is_active' => true,
         ]);
 
@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Juan Dela Cruz',
             'email' => 'juan@ecogazz.com',
             'password' => Hash::make('1234'),
-            'role' => 'Pump Attendant',
+            'role' => 'Employee',
             'is_active' => true,
         ]);
 

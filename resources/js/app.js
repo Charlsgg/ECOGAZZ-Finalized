@@ -1,21 +1,73 @@
 import './bootstrap';
 import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
-import Login from './authpages/Login.vue';
+import axios from 'axios';
 
-// 1. Define at least one route so the router doesn't crash
+import Login from './authpages/Login.vue';
+import AdminDashboard from './pages/AdminDashboard.vue';
+import EmployeeDashboard from './pages/EmployeeDashboard.vue';
+import App from './app.vue'; 
+
+axios.defaults.baseURL = 'http://127.0.0.1:8000';
+
+// 1. Set Initial Header
+const token = localStorage.getItem('auth_token');
+if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+axios.interceptors.response.use(
+    res => res,
+    err => {
+        if (err.response.status === 401) {
+            // Public tried to access Auth route
+            window.location.href = '/login';
+        }
+        if (err.response.status === 403) {
+            // User tried to access "Other User" route
+            alert("Forbidden: Access Denied.");
+        }
+        return Promise.reject(err);
+    }
+);
+
 const routes = [
-    { path: '/login', component: Login, name: 'login' }
+    { path: '/', redirect: '/login' },
+    { 
+        path: '/login', 
+        component: Login, 
+        name: 'login'
+    },
+    { 
+        path: '/admin/dashboard', 
+        component: AdminDashboard, 
+        name: 'admin.dashboard',
+        meta: { requiresAuth: true }
+    },
+    { 
+        path: '/employee/dashboard', 
+        component: EmployeeDashboard, 
+        name: 'employee.dashboard',
+        meta: { requiresAuth: true }
+    }
 ];
 
-// 2. Create the router instance
 const router = createRouter({
     history: createWebHistory(),
     routes,
 });
 
-const app = createApp(Login);
+// 3. Simple Navigation Guard
+router.beforeEach((to, from, next) => {
+    const isAuthenticated = !!localStorage.getItem('auth_token');
 
-// 3. Tell Vue to use the router
+    // Only prevent entry to protected pages if not logged in
+    if (to.meta.requiresAuth && !isAuthenticated) {
+        return next({ name: 'login' });
+    }
+
+    next();
+});
+
+const app = createApp(App);
 app.use(router);
 app.mount('#app');
