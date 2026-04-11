@@ -81,9 +81,9 @@ const attemptLogin = async (intendedRole) => {
 
     const normalized = role.toLowerCase();
 
-    if (normalized === 'manager' || normalized === 'admin') {
+    if (normalized === 'Admin' || normalized === 'Admin') {
       router.push({ name: 'admin.dashboard' });
-    } else if (normalized === 'pump attendant' || normalized === 'staff') {
+    } else if (normalized === 'Employee' || normalized === 'Employee') {
       router.push({ name: 'employee.dashboard' });
     }
 

@@ -21,8 +21,8 @@ class RoleMiddleware
         $requiredRole = strtolower($role);
 
         // Handle your specific "Pump Attendant" vs "employee" logic if needed
-        if ($requiredRole === 'employee' && $userRole === 'pump attendant') {
-            $userRole = 'employee';
+        if ($requiredRole === 'Employee' && $userRole === 'Employee') {
+            $userRole = 'Employee';
         }
 
         if ($userRole !== $requiredRole) {
