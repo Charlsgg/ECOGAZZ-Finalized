@@ -1,0 +1,2 @@
+models:
+    User: { name: string, role: "string default:'Pump Attendant'", is_active: "boolean default:'1'", email: string, email_verified_at: 'datetime nullable', password: string, remember_token: 'string nullable' }

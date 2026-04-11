@@ -22,11 +22,7 @@ return new class extends Migration
             
             // How much the entire delivery cost
             $table->decimal('total_amount', 10, 2)->default(0);
-            
-            // Is the order just placed, or has the truck actually arrived?
             $table->enum('status', ['Pending', 'Received', 'Cancelled'])->default('Pending');
-            
-            // When do you expect it, or when did it arrive?
             $table->date('delivery_date')->nullable();
             
             $table->timestamps();
