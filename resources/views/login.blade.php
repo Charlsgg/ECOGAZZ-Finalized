@@ -7,8 +7,8 @@
 <body>
 
     <div id="app">
-        
-        </div>
+        <login-page></login-page>
+    </div>
 
 </body>
 </html>

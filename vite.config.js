@@ -1,15 +1,18 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import vue from '@vitejs/plugin-vue'; // Ensure this is imported
-import tailwindcss from '@tailwindcss/vite'; // The new v4 way
+import vue from '@vitejs/plugin-vue';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
     plugins: [
-        tailwindcss(),
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            input: [
+                'resources/css/app.css', 
+                'resources/js/app.js'
+            ],
             refresh: true,
         }),
+        tailwindcss(),
         vue({
             template: {
                 transformAssetUrls: {
@@ -19,4 +22,10 @@ export default defineConfig({
             },
         }),
     ],
+    // ADD THIS SECTION RIGHT HERE:
+    resolve: {
+        alias: {
+            vue: 'vue/dist/vue.esm-bundler.js',
+        },
+    },
 });

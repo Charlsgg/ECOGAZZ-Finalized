@@ -19,18 +19,18 @@
         class="w-full p-3.5 mb-3 border-2 border-[#e8ebe9] rounded-xl text-[0.95rem] text-center font-medium bg-[#fafbfa] transition-all focus:outline-none focus:border-[#3dbb91] focus:bg-white">
 
       <input type="password" v-model="password" placeholder="Password"
-        @keydown.enter="attemptLogin(activeBtn || 'admin')" :disabled="isLoggingIn"
+        @keydown.enter="attemptLogin(activeBtn || 'Admin')" :disabled="isLoggingIn"
         class="w-full p-3.5 mb-6 border-2 border-[#e8ebe9] rounded-xl text-[0.95rem] text-center tracking-widest font-bold bg-[#fafbfa] transition-all focus:outline-none focus:border-[#3dbb91] focus:bg-white focus:ring-4 focus:ring-[#3dbb91]/15">
 
       <div class="flex gap-2.5">
-        <button @click="attemptLogin('admin')" :disabled="isLoggingIn"
+        <button @click="attemptLogin('Admin')" :disabled="isLoggingIn"
           class="flex-1 p-3.5 rounded-xl text-[0.85rem] font-bold flex justify-center items-center gap-2 transition-all hover:-translate-y-0.5 shadow-md bg-[#1a1c1b] text-white active:translate-y-0 disabled:opacity-70">
-          <i class="fa-solid fa-shield-halved" :class="{ 'fa-spin': isLoggingIn && activeBtn === 'admin' }"></i> Admin
+          <i class="fa-solid fa-shield-halved" :class="{ 'fa-spin': isLoggingIn && activeBtn === 'Admin' }"></i> Admin
         </button>
 
-        <button @click="attemptLogin('employee')" :disabled="isLoggingIn"
+        <button @click="attemptLogin('Employee')" :disabled="isLoggingIn"
           class="flex-1 p-3.5 rounded-xl text-[0.85rem] font-bold flex justify-center items-center gap-2 transition-all hover:-translate-y-0.5 shadow-md bg-linear-to-br from-[#3dbb91] to-[#2d9e7a] text-white active:translate-y-0 disabled:opacity-70">
-          <i class="fa-solid fa-user" :class="{ 'fa-spin': isLoggingIn && activeBtn === 'employee' }"></i> Gasman
+          <i class="fa-solid fa-user" :class="{ 'fa-spin': isLoggingIn && activeBtn === 'Employee' }"></i> Gasman
         </button>
       </div>
 
@@ -52,7 +52,6 @@ const isLoggingIn = ref(false);
 const activeBtn = ref(null);
 const errorMessage = ref('');
 const router = useRouter();
-
 const attemptLogin = async (intendedRole) => {
   if (!email.value || !password.value) {
     errorMessage.value = "Credentials required.";
@@ -64,7 +63,8 @@ const attemptLogin = async (intendedRole) => {
     isLoggingIn.value = true;
     activeBtn.value = intendedRole;
 
-    const response = await axios.post('/api/login', {
+    // BUG FIX 1: Change '/api/login' to '/login' to match your web.php routes
+    const response = await axios.post('/login', {
       email: email.value,
       password: password.value,
       role: intendedRole
@@ -72,18 +72,16 @@ const attemptLogin = async (intendedRole) => {
 
     const { token, role, user } = response.data;
 
-
     localStorage.setItem('auth_token', token);
     localStorage.setItem('user_role', role);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-    const normalizedRole = role.toLowerCase().trim();
+    // BUG FIX 2: Check against fully lowercase strings!
+    const normalized = role.toLowerCase().trim();
 
-    const normalized = role.toLowerCase();
-
-    if (normalized === 'Admin' || normalized === 'Admin') {
+    if (normalized === 'admin') {
       router.push({ name: 'admin.dashboard' });
-    } else if (normalized === 'Employee' || normalized === 'Employee') {
+    } else if (normalized === 'employee') {
       router.push({ name: 'employee.dashboard' });
     }
 
@@ -91,7 +89,6 @@ const attemptLogin = async (intendedRole) => {
     errorMessage.value = error.response?.data?.message || 'Login failed. Check your connection.';
   } finally {
     isLoggingIn.value = false;
-    // Keep activeBtn if we're successful, otherwise reset
     if (errorMessage.value) activeBtn.value = null;
   }
 };

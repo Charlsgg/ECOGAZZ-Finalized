@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
+/* Go up one folder from /css, then into /views and /js */
 @source "../views/**/*.blade.php";
-@source "../js/**/*.js";
 @source "../js/**/*.vue";
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+@source "../js/**/*.js";
+
+/* (Optional) Include vendor views if you are using Laravel's built-in pagination */
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
