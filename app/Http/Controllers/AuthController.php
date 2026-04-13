@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth; // <-- ADDED THIS IMPORT
 
 class AuthController extends Controller
 {
@@ -16,7 +17,7 @@ class AuthController extends Controller
             'role'     => 'required|string', 
         ]);
 
-        // 1. Find the user by email ONLY first (to see if they exist)
+        // 1. Find the user by email ONLY first
         $user = User::where('email', $request->email)->first();
 
         // 2. DEBUG: Check if user exists
@@ -36,26 +37,20 @@ class AuthController extends Controller
 
         /**
          * 5. ROLE NORMALIZATION MAPPING
-         * Your DB has "Pump Attendant", but your Vue sends "Staff".
-         * We need to allow them to match.
          */
-        /**
-         * 5. ROLE NORMALIZATION MAPPING
-         * Bridges the gap between Frontend Labels and Database Roles
-         */
-        $dbRole = $user->role; // What is in the Database
-        $sentRole = $request->role; // What was clicked in Vue ('Manager' or 'Staff')
+        $dbRole = $user->role; 
+        $sentRole = $request->role; 
 
         // Group 1: Admin / Manager group
         $isAdminMatch = (
-            in_array($sentRole, ['Manager', 'admin']) && 
-            in_array($dbRole, ['Manager', 'admin'])
+            in_array($sentRole, ['Manager', 'admin', 'Admin']) && 
+            in_array($dbRole, ['Manager', 'admin', 'Admin'])
         );
 
         // Group 2: Staff / Pump Attendant group
         $isStaffMatch = (
-            in_array($sentRole, ['Staff', 'employee']) && 
-            in_array($dbRole, ['Pump Attendant', 'Staff', 'employee'])
+            in_array($sentRole, ['Staff', 'employee', 'Employee']) && 
+            in_array($dbRole, ['Pump Attendant', 'Staff', 'employee', 'Employee'])
         );
 
         // Check if either group matches or if they are exactly the same string
@@ -65,13 +60,17 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // 6. Generate Sanctum token
+        // 6. LOG THE USER IN VIA SESSION (The crucial fix!)
+        Auth::login($user);
+        $request->session()->regenerate(); // Protects against session fixation
+
+        // Optional: You can keep generating the Sanctum token if you plan to use Axios for other API calls on the dashboard
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'status' => 'success',
             'token'  => $token,
-            'role'   => $dbRole, // Send back the real DB role
+            'role'   => $dbRole, 
             'user'   => [
                 'id'    => $user->id,
                 'name'  => $user->name,
@@ -82,7 +81,16 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        // Destroy the web session
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        // Destroy the API token (if applicable)
+        if ($request->user()) {
+            $request->user()->currentAccessToken()->delete();
+        }
+
         return response()->json(['message' => 'Logged out successfully']);
     }
 }

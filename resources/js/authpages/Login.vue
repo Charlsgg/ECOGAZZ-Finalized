@@ -44,14 +44,15 @@
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router';
+// 1. REMOVED the 'vue-router' import
 
 const email = ref('');
 const password = ref('');
 const isLoggingIn = ref(false);
 const activeBtn = ref(null);
 const errorMessage = ref('');
-const router = useRouter();
+// 2. REMOVED the 'const router = useRouter()' initialization
+
 const attemptLogin = async (intendedRole) => {
   if (!email.value || !password.value) {
     errorMessage.value = "Credentials required.";
@@ -63,7 +64,6 @@ const attemptLogin = async (intendedRole) => {
     isLoggingIn.value = true;
     activeBtn.value = intendedRole;
 
-    // BUG FIX 1: Change '/api/login' to '/login' to match your web.php routes
     const response = await axios.post('/login', {
       email: email.value,
       password: password.value,
@@ -76,17 +76,23 @@ const attemptLogin = async (intendedRole) => {
     localStorage.setItem('user_role', role);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-    // BUG FIX 2: Check against fully lowercase strings!
     const normalized = role.toLowerCase().trim();
+    console.log("1. The normalized role is:", normalized); // <--- ADD THIS
 
     if (normalized === 'admin') {
-      router.push({ name: 'admin.dashboard' });
+      console.log("2. Attempting Admin Redirect!"); // <--- ADD THIS
+      window.location.href = '/admin/dashboard'; 
     } else if (normalized === 'employee') {
-      router.push({ name: 'employee.dashboard' });
+      console.log("2. Attempting Employee Redirect!"); // <--- ADD THIS
+      window.location.href = '/employee/dashboard'; 
+    } else {
+      console.log("3. ERROR: Role did not match admin or employee"); // <--- ADD THIS
     }
 
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || 'Login failed. Check your connection.';
+    // 4. ADDED a console.log so you can see real errors in the DevTools console
+    console.error("Login Error:", error); 
+    errorMessage.value = (error.response && error.response.data && error.response.data.message) || 'Login failed. Check your connection.';
   } finally {
     isLoggingIn.value = false;
     if (errorMessage.value) activeBtn.value = null;
